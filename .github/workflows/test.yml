@@ -1,0 +1,110 @@
+name: Test Automation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Create test-results directory
+      run: mkdir -p test-results/screenshots test-results/videos
+
+    - name: Run tests on Chrome
+      run: npx playwright test --project=chromium
+      env:
+        NODE_ENV: prod
+        CI: true
+        PROD_BASE_URL: https://onlytests.io
+        PROD_API_URL: https://onlytests.io/api
+        TIMEOUT: 30000
+        RETRIES: 2
+        HEADLESS: true
+        SCREENSHOT_ON_FAILURE: true
+        VIDEO_ON_FAILURE: true
+        TRACE_ON_FAILURE: true
+        PARALLEL: true
+        WORKERS: 4
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-chrome
+        path: |
+          test-results/
+          playwright-report/
+
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: screenshots-chrome
+        path: test-results/screenshots/
+
+    - name: Upload videos
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: videos-chrome
+        path: test-results/videos/
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run ESLint
+      run: npm run lint
+
+    - name: Run TypeScript type check
+      run: npx tsc --noEmit
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run security audit
+      run: npm audit --audit-level moderate 
