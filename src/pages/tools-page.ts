@@ -2,6 +2,13 @@ import { Page } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class ToolsPage extends BasePage {
+  async setCharacterCount(value: number): Promise<void> {
+    await this.page.fill('input[type="number"]', value.toString());
+  }
+
+  async getGeneratedText(): Promise<string> {
+    return await this.page.locator('textarea').textContent() || '';
+  }
   // Make page property public to match interface
   public readonly page: Page;
 
